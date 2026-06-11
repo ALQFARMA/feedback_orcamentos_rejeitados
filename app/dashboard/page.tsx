@@ -16,9 +16,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
     loadOpcoes();
+    loadUserName();
   }, []);
 
   const loadOpcoes = async () => {
@@ -30,6 +32,18 @@ export default function Dashboard() {
       }
     } catch (err) {
       setError('Erro ao carregar opções');
+    }
+  };
+
+  const loadUserName = async () => {
+    try {
+      const res = await fetch('/api/auth/user-info');
+      const data = await res.json();
+      if (data.success) {
+        setUserName(data.nome);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar nome do usuário:', err);
     }
   };
 
@@ -48,9 +62,9 @@ export default function Dashboard() {
 
       const data = await res.json();
       if (data.success) {
-        setSuccess('✓ Feedback registrado com sucesso! Obrigado! 🙏');
+        setSuccess('Seu registro foi salvo com sucesso');
         setSelected(null);
-        setTimeout(() => setSuccess(''), 3000);
+        setTimeout(() => setSuccess(''), 4000);
       } else {
         setError(data.error);
       }
@@ -70,15 +84,25 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-xl p-8 border-t-4 border-blue-900">
-          {/* LOGO */}
+          {/* HEADER COM LOGO E NOME DO USUÁRIO */}
           <div className="flex justify-between items-center mb-8">
-            <Image
-              src="/images/logo.png"
-              alt="Logo"
-              width={80}
-              height={80}
-              className="rounded-lg"
-            />
+            <div className="flex items-center gap-4">
+              <Image
+                src="/images/logo.png"
+                alt="Logo"
+                width={80}
+                height={80}
+                className="rounded-lg"
+              />
+              {userName && (
+                <div>
+                  <p className="text-gray-600" style={{ fontFamily: 'Poppins' }}>Bem-vindo(a),</p>
+                  <p className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>
+                    {userName}
+                  </p>
+                </div>
+              )}
+            </div>
             <button
               onClick={handleLogout}
               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm"
@@ -88,52 +112,4 @@ export default function Dashboard() {
             </button>
           </div>
 
-          <h1 className="text-3xl font-bold text-blue-900 mb-2" style={{ fontFamily: 'Poppins' }}>
-            Feedback de Orçamento
-          </h1>
-
-          {/* FRASE AMIGÁVEL */}
-          <div className="bg-blue-50 border-l-4 border-blue-900 p-4 mb-6 rounded">
-            <p className="text-blue-900 text-center" style={{ fontFamily: 'Poppins' }}>
-              Olá! 👋 Agradecemos o seu feedback! Para melhorarmos nossa experiência, 
-              poderia nos informar o motivo pela qual você ainda não aprovou seu pedido? 
-              É super rápido! 😊
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              {opcoes.map((opcao) => (
-                <label key={opcao.id} className="flex items-start p-3 hover:bg-white rounded cursor-pointer transition mb-2">
-                  <input
-                    type="radio"
-                    name="opcao"
-                    value={opcao.id}
-                    checked={selected === opcao.id}
-                    onChange={(e) => setSelected(Number(e.target.value))}
-                    className="w-4 h-4 text-blue-900 mt-1"
-                  />
-                  <span className="ml-3 font-medium text-gray-700" style={{ fontFamily: 'Poppins' }}>
-                    {opcao.nome}
-                  </span>
-                </label>
-              ))}
-            </div>
-
-            {error && <p className="text-red-500 text-center" style={{ fontFamily: 'Poppins' }}>{error}</p>}
-            {success && <p className="text-green-600 font-bold text-center" style={{ fontFamily: 'Poppins' }}>{success}</p>}
-
-            <button
-              type="submit"
-              disabled={loading || !selected}
-              className="w-full bg-blue-900 hover:bg-blue-950 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ fontFamily: 'Poppins' }}
-            >
-              {loading ? 'Registrando...' : 'Enviar Feedback'}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-}
+          <h1 className="text-3xl font-bold
