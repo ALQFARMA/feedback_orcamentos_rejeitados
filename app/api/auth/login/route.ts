@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     // Cria JWT token
     const token = jwt.sign(
-      { userId: user.id, é_admin: user.é_admin },
+      { userId: user.id, isAdmin: user.é_admin },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
     );
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       success: true,
       token,
       userId: user.id,
-      é_admin: user.é_admin
+      isAdmin: user.é_admin
     });
 
     // Salva token em cookie (seguro)
