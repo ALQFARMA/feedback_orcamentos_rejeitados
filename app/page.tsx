@@ -36,7 +36,7 @@ export default function Home() {
 
       if (data.success) {
         if (isLogin) {
-          if (data.é_admin) {
+          if (data.isAdmin) {
             router.push('/admin');
           } else {
             router.push('/dashboard');
