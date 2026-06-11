@@ -10,7 +10,12 @@ export async function verifyAuth(req: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    return decoded;
+    
+    return {
+      userId: decoded.userId,
+      email: decoded.email,
+      isAdmin: decoded.isAdmin
+    };
   } catch (error) {
     return null;
   }
