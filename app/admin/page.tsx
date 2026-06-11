@@ -61,7 +61,7 @@ export default function Admin() {
       const res = await fetch('/api/admin/stats');
       const data = await res.json();
       if (data.success) {
-        setStats(data.dados);
+        setStats(data.stats);
       }
     } catch (err) {
       console.error('Erro ao carregar stats:', err);
@@ -75,7 +75,7 @@ export default function Admin() {
       const res = await fetch('/api/admin/user-stats');
       const data = await res.json();
       if (data.success) {
-        setUserStats(data.dados);
+        setUserStats(data.stats);
       }
     } catch (err) {
       console.error('Erro ao carregar user stats:', err);
@@ -87,7 +87,7 @@ export default function Admin() {
       const res = await fetch('/api/admin/loja-stats');
       const data = await res.json();
       if (data.success) {
-        setLojaStats(data.dados);
+        setLojaStats(data.stats);
       }
     } catch (err) {
       console.error('Erro ao carregar loja stats:', err);
@@ -177,55 +177,37 @@ export default function Admin() {
             Painel Administrativo
           </h1>
 
-          {/* ABAS */}
           <div className="flex gap-2 mb-8 border-b-2 border-gray-200 overflow-x-auto">
             <button
               onClick={() => setTab('opcoes')}
-              className={`px-4 py-2 font-bold whitespace-nowrap ${
-                tab === 'opcoes'
-                  ? 'text-blue-900 border-b-4 border-blue-900'
-                  : 'text-gray-600'
-              }`}
+              className={`px-4 py-2 font-bold whitespace-nowrap ${tab === 'opcoes' ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
               style={{ fontFamily: 'Poppins' }}
             >
               Feedback por Motivo
             </button>
             <button
               onClick={() => setTab('usuarios')}
-              className={`px-4 py-2 font-bold whitespace-nowrap ${
-                tab === 'usuarios'
-                  ? 'text-blue-900 border-b-4 border-blue-900'
-                  : 'text-gray-600'
-              }`}
+              className={`px-4 py-2 font-bold whitespace-nowrap ${tab === 'usuarios' ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
               style={{ fontFamily: 'Poppins' }}
             >
               Feedback por Atendente
             </button>
             <button
               onClick={() => setTab('lojas')}
-              className={`px-4 py-2 font-bold whitespace-nowrap ${
-                tab === 'lojas'
-                  ? 'text-blue-900 border-b-4 border-blue-900'
-                  : 'text-gray-600'
-              }`}
+              className={`px-4 py-2 font-bold whitespace-nowrap ${tab === 'lojas' ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
               style={{ fontFamily: 'Poppins' }}
             >
               Feedback por Loja
             </button>
             <button
               onClick={() => setTab('logs')}
-              className={`px-4 py-2 font-bold whitespace-nowrap ${
-                tab === 'logs'
-                  ? 'text-blue-900 border-b-4 border-blue-900'
-                  : 'text-gray-600'
-              }`}
+              className={`px-4 py-2 font-bold whitespace-nowrap ${tab === 'logs' ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
               style={{ fontFamily: 'Poppins' }}
             >
               Logs
             </button>
           </div>
 
-          {/* GRÁFICO 1: OPÇÕES */}
           {tab === 'opcoes' && (
             <div>
               <h2 className="text-2xl font-bold mb-6 text-blue-900" style={{ fontFamily: 'Poppins' }}>
@@ -238,7 +220,6 @@ export default function Admin() {
               ) : (
                 <p className="text-gray-500" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
               )}
-
               <button
                 onClick={loadStats}
                 disabled={loading}
@@ -247,7 +228,6 @@ export default function Admin() {
               >
                 {loading ? 'Carregando...' : 'Atualizar'}
               </button>
-
               <table className="w-full mt-6 border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
@@ -267,7 +247,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* GRÁFICO 2: USUÁRIOS */}
           {tab === 'usuarios' && (
             <div>
               <h2 className="text-2xl font-bold mb-6 text-blue-900" style={{ fontFamily: 'Poppins' }}>
@@ -280,7 +259,6 @@ export default function Admin() {
               ) : (
                 <p className="text-gray-500" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
               )}
-
               <button
                 onClick={loadUserStats}
                 className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg"
@@ -288,7 +266,6 @@ export default function Admin() {
               >
                 Atualizar
               </button>
-
               <table className="w-full mt-6 border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
@@ -310,7 +287,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* GRÁFICO 3: LOJAS */}
           {tab === 'lojas' && (
             <div>
               <h2 className="text-2xl font-bold mb-6 text-blue-900" style={{ fontFamily: 'Poppins' }}>
@@ -323,7 +299,6 @@ export default function Admin() {
               ) : (
                 <p className="text-gray-500" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
               )}
-
               <button
                 onClick={loadLojaStats}
                 className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg"
@@ -331,7 +306,6 @@ export default function Admin() {
               >
                 Atualizar
               </button>
-
               <table className="w-full mt-6 border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
@@ -351,13 +325,11 @@ export default function Admin() {
             </div>
           )}
 
-          {/* LOGS */}
           {tab === 'logs' && (
             <div>
               <h2 className="text-2xl font-bold mb-6 text-blue-900" style={{ fontFamily: 'Poppins' }}>
                 Logs do Sistema
               </h2>
-
               <button
                 onClick={loadLogs}
                 className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg mb-4"
@@ -365,7 +337,6 @@ export default function Admin() {
               >
                 Atualizar
               </button>
-
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
