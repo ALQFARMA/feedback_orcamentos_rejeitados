@@ -39,15 +39,16 @@ interface Log {
   created_at: string;
 }
 
+const MESES_NOMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
 function getMeses() {
   const meses = [];
   const now = new Date();
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
-      .replace('.', '').replace(' ', '/');
+    const label = `${MESES_NOMES[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
     const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    meses.push({ label: label.charAt(0).toUpperCase() + label.slice(1), value });
+    meses.push({ label, value });
   }
   return meses;
 }
@@ -57,7 +58,7 @@ function exportCSV(data: any[], filename: string) {
   const headers = Object.keys(data[0]).join(',');
   const rows = data.map(row => Object.values(row).join(','));
   const csv = [headers, ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -169,10 +170,10 @@ export default function Admin() {
   };
 
   const chartOpcoes = {
-    labels: stats.map(s => s.nome.substring(0, 20) + (s.nome.length > 20 ? '...' : '')),
+    labels: stats.map(s => s.nome.length > 25 ? s.nome.substring(0, 25) + '...' : s.nome),
     datasets: [{
       label: 'Total de Feedback',
-      data: stats.map(s => s.total),
+      data: stats.map(s => Number(s.total)),
       backgroundColor: ['#2E3F6E', '#475569', '#64748B', '#94A3B8', '#CBD5E1', '#E2E8F0'],
       borderColor: '#fff',
       borderWidth: 2,
@@ -183,7 +184,7 @@ export default function Admin() {
     labels: userStats.map(u => `${u.nome} (${u.loja})`),
     datasets: [{
       label: 'Feedback por Atendente',
-      data: userStats.map(u => u.total),
+      data: userStats.map(u => Number(u.total)),
       backgroundColor: '#2E3F6E',
       borderColor: '#fff',
       borderWidth: 2,
@@ -191,49 +192,27 @@ export default function Admin() {
   };
 
   const chartLojas = {
-    labels: lojaStats.map(l => l.loja),
+    labels: lojaStats.map(l => l.loja || 'Sem loja'),
     datasets: [{
       label: 'Total por Loja',
-      data: lojaStats.map(l => l.total),
+      data: lojaStats.map(l => Number(l.total)),
       backgroundColor: ['#2E3F6E', '#475569', '#64748B'],
       borderColor: '#fff',
       borderWidth: 2,
     }],
   };
 
-  const FiltroBar = () => (
-    <div className="flex flex-wrap items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-8">
-      <span className="text-xs font-bold text-slate-500 tracking-widest uppercase" style={{ fontFamily: 'Poppins' }}>
-        Período:
-      </span>
-      <select
-        value={periodoInicio}
-        onChange={e => setPeriodoInicio(e.target.value)}
-        className="bg-white border border-slate-300 rounded-full px-4 py-1.5 text-sm font-medium text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
-        style={{ fontFamily: 'Poppins' }}
-      >
-        {meses.map(m => (
-          <option key={m.value} value={m.value}>{m.label}</option>
-        ))}
-      </select>
-      <select
-        value={periodoFim}
-        onChange={e => setPeriodoFim(e.target.value)}
-        className="bg-white border border-slate-300 rounded-full px-4 py-1.5 text-sm font-medium text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
-        style={{ fontFamily: 'Poppins' }}
-      >
-        {meses.map(m => (
-          <option key={m.value} value={m.value}>{m.label}</option>
-        ))}
-      </select>
-      <button
-        onClick={handleUltimoMes}
-        className="bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase"
-        style={{ fontFamily: 'Poppins' }}
-      >
-        Último Mês
-      </button>
-    </div>
+  const SelectMes = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className="bg-white border border-slate-300 rounded-full px-4 py-1.5 text-sm font-medium text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+      style={{ fontFamily: 'Poppins' }}
+    >
+      {meses.map(m => (
+        <option key={m.value} value={m.value}>{m.label}</option>
+      ))}
+    </select>
   );
 
   return (
@@ -266,18 +245,37 @@ export default function Admin() {
           </h1>
 
           {/* FILTRO */}
-          <FiltroBar />
+          <div className="flex flex-wrap items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-8">
+            <span className="text-xs font-bold text-slate-500 tracking-widest uppercase" style={{ fontFamily: 'Poppins' }}>
+              Período:
+            </span>
+            <SelectMes value={periodoInicio} onChange={setPeriodoInicio} />
+            <span className="text-slate-400 text-sm">até</span>
+            <SelectMes value={periodoFim} onChange={setPeriodoFim} />
+            <button
+              onClick={handleUltimoMes}
+              className="bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase"
+              style={{ fontFamily: 'Poppins' }}
+            >
+              Último Mês
+            </button>
+          </div>
 
           {/* ABAS */}
           <div className="flex gap-2 mb-8 border-b-2 border-gray-200 overflow-x-auto">
-            {(['opcoes', 'usuarios', 'lojas', 'logs'] as const).map((t) => (
+            {([
+              { key: 'opcoes', label: 'Feedback por Motivo' },
+              { key: 'usuarios', label: 'Feedback por Atendente' },
+              { key: 'lojas', label: 'Feedback por Loja' },
+              { key: 'logs', label: 'Logs' },
+            ] as const).map(({ key, label }) => (
               <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-4 py-2 font-bold whitespace-nowrap ${tab === t ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
+                key={key}
+                onClick={() => setTab(key)}
+                className={`px-4 py-2 font-bold whitespace-nowrap ${tab === key ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
                 style={{ fontFamily: 'Poppins' }}
               >
-                {t === 'opcoes' ? 'Feedback por Motivo' : t === 'usuarios' ? 'Feedback por Atendente' : t === 'lojas' ? 'Feedback por Loja' : 'Logs'}
+                {label}
               </button>
             ))}
           </div>
@@ -298,7 +296,7 @@ export default function Admin() {
               </div>
               {stats.length > 0 ? (
                 <div className="mb-8">
-                  <Bar data={chartOpcoes} options={{ responsive: true, indexAxis: 'y' }} />
+                  <Bar data={chartOpcoes} options={{ responsive: true, indexAxis: 'y' as const }} />
                 </div>
               ) : (
                 <p className="text-gray-500 mb-6" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
@@ -336,7 +334,7 @@ export default function Admin() {
                   </button>
                 </div>
               </div>
-              {userStats.length > 0 ? (
+              {userStats.filter(u => u.nome).length > 0 ? (
                 <div className="mb-8">
                   <Bar data={chartUsuarios} options={{ responsive: true }} />
                 </div>
@@ -352,7 +350,7 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {userStats.map((user) => (
+                  {userStats.filter(u => u.nome).map((user) => (
                     <tr key={`${user.nome}-${user.loja}`} className="hover:bg-gray-50">
                       <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{user.nome}</td>
                       <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{user.loja}</td>
@@ -378,7 +376,7 @@ export default function Admin() {
                   </button>
                 </div>
               </div>
-              {lojaStats.length > 0 ? (
+              {lojaStats.filter(l => l.loja).length > 0 ? (
                 <div className="mb-8">
                   <Bar data={chartLojas} options={{ responsive: true }} />
                 </div>
@@ -393,7 +391,7 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {lojaStats.map((loja) => (
+                  {lojaStats.filter(l => l.loja).map((loja) => (
                     <tr key={loja.loja} className="hover:bg-gray-50">
                       <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{loja.loja}</td>
                       <td className="p-3 border-b font-bold" style={{ fontFamily: 'Poppins' }}>{loja.total}</td>
