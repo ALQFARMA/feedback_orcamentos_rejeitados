@@ -34,35 +34,93 @@ interface LojaStat {
 
 interface Log {
   id: number;
-  email: string;
+  nome: string;
   acao: string;
   created_at: string;
 }
 
+function getMeses() {
+  const meses = [];
+  const now = new Date();
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+      .replace('.', '').replace(' ', '/');
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    meses.push({ label: label.charAt(0).toUpperCase() + label.slice(1), value });
+  }
+  return meses;
+}
+
+function exportCSV(data: any[], filename: string) {
+  if (!data.length) return;
+  const headers = Object.keys(data[0]).join(',');
+  const rows = data.map(row => Object.values(row).join(','));
+  const csv = [headers, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function Admin() {
   const router = useRouter();
+  const meses = getMeses();
+  const mesAtual = meses[meses.length - 1].value;
+  const mesAnterior = meses[meses.length - 2].value;
+
   const [stats, setStats] = useState<Stat[]>([]);
   const [userStats, setUserStats] = useState<UserStat[]>([]);
   const [lojaStats, setLojaStats] = useState<LojaStat[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
   const [tab, setTab] = useState<'opcoes' | 'usuarios' | 'lojas' | 'logs'>('opcoes');
   const [loading, setLoading] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [periodoInicio, setPeriodoInicio] = useState(mesAtual);
+  const [periodoFim, setPeriodoFim] = useState(mesAtual);
 
   useEffect(() => {
+    loadUserName();
+  }, []);
+
+  useEffect(() => {
+    loadAll();
+  }, [periodoInicio, periodoFim]);
+
+  const loadUserName = async () => {
+    try {
+      const res = await fetch('/api/auth/user-info');
+      const data = await res.json();
+      if (data.success) setUserName(data.nome);
+    } catch (err) {
+      console.error('Erro ao carregar nome:', err);
+    }
+  };
+
+  const buildQuery = () => {
+    const inicio = `${periodoInicio}-01`;
+    const [ano, mes] = periodoFim.split('-');
+    const ultimoDia = new Date(Number(ano), Number(mes), 0).getDate();
+    const fim = `${periodoFim}-${ultimoDia}`;
+    return `?inicio=${inicio}&fim=${fim}`;
+  };
+
+  const loadAll = () => {
     loadStats();
     loadUserStats();
     loadLojaStats();
     loadLogs();
-  }, []);
+  };
 
   const loadStats = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin/stats');
+      const res = await fetch(`/api/admin/stats${buildQuery()}`);
       const data = await res.json();
-      if (data.success) {
-        setStats(data.stats);
-      }
+      if (data.success) setStats(data.stats);
     } catch (err) {
       console.error('Erro ao carregar stats:', err);
     } finally {
@@ -72,11 +130,9 @@ export default function Admin() {
 
   const loadUserStats = async () => {
     try {
-      const res = await fetch('/api/admin/user-stats');
+      const res = await fetch(`/api/admin/user-stats${buildQuery()}`);
       const data = await res.json();
-      if (data.success) {
-        setUserStats(data.stats);
-      }
+      if (data.success) setUserStats(data.stats);
     } catch (err) {
       console.error('Erro ao carregar user stats:', err);
     }
@@ -84,11 +140,9 @@ export default function Admin() {
 
   const loadLojaStats = async () => {
     try {
-      const res = await fetch('/api/admin/loja-stats');
+      const res = await fetch(`/api/admin/loja-stats${buildQuery()}`);
       const data = await res.json();
-      if (data.success) {
-        setLojaStats(data.stats);
-      }
+      if (data.success) setLojaStats(data.stats);
     } catch (err) {
       console.error('Erro ao carregar loja stats:', err);
     }
@@ -96,14 +150,17 @@ export default function Admin() {
 
   const loadLogs = async () => {
     try {
-      const res = await fetch('/api/admin/logs');
+      const res = await fetch(`/api/admin/logs${buildQuery()}`);
       const data = await res.json();
-      if (data.success) {
-        setLogs(data.logs);
-      }
+      if (data.success) setLogs(data.logs);
     } catch (err) {
       console.error('Erro ao carregar logs:', err);
     }
+  };
+
+  const handleUltimoMes = () => {
+    setPeriodoInicio(mesAnterior);
+    setPeriodoFim(mesAnterior);
   };
 
   const handleLogout = async () => {
@@ -113,121 +170,139 @@ export default function Admin() {
 
   const chartOpcoes = {
     labels: stats.map(s => s.nome.substring(0, 20) + (s.nome.length > 20 ? '...' : '')),
-    datasets: [
-      {
-        label: 'Total de Feedback',
-        data: stats.map(s => s.total),
-        backgroundColor: ['#2E3F6E', '#475569', '#64748B', '#94A3B8', '#CBD5E1', '#E2E8F0'],
-        borderColor: '#fff',
-        borderWidth: 2,
-      },
-    ],
+    datasets: [{
+      label: 'Total de Feedback',
+      data: stats.map(s => s.total),
+      backgroundColor: ['#2E3F6E', '#475569', '#64748B', '#94A3B8', '#CBD5E1', '#E2E8F0'],
+      borderColor: '#fff',
+      borderWidth: 2,
+    }],
   };
 
   const chartUsuarios = {
     labels: userStats.map(u => `${u.nome} (${u.loja})`),
-    datasets: [
-      {
-        label: 'Feedback por Atendente',
-        data: userStats.map(u => u.total),
-        backgroundColor: '#2E3F6E',
-        borderColor: '#fff',
-        borderWidth: 2,
-      },
-    ],
+    datasets: [{
+      label: 'Feedback por Atendente',
+      data: userStats.map(u => u.total),
+      backgroundColor: '#2E3F6E',
+      borderColor: '#fff',
+      borderWidth: 2,
+    }],
   };
 
   const chartLojas = {
     labels: lojaStats.map(l => l.loja),
-    datasets: [
-      {
-        label: 'Total por Loja',
-        data: lojaStats.map(l => l.total),
-        backgroundColor: ['#2E3F6E', '#475569', '#64748B'],
-        borderColor: '#fff',
-        borderWidth: 2,
-      },
-    ],
+    datasets: [{
+      label: 'Total por Loja',
+      data: lojaStats.map(l => l.total),
+      backgroundColor: ['#2E3F6E', '#475569', '#64748B'],
+      borderColor: '#fff',
+      borderWidth: 2,
+    }],
   };
+
+  const FiltroBar = () => (
+    <div className="flex flex-wrap items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-8">
+      <span className="text-xs font-bold text-slate-500 tracking-widest uppercase" style={{ fontFamily: 'Poppins' }}>
+        Período:
+      </span>
+      <select
+        value={periodoInicio}
+        onChange={e => setPeriodoInicio(e.target.value)}
+        className="bg-white border border-slate-300 rounded-full px-4 py-1.5 text-sm font-medium text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+        style={{ fontFamily: 'Poppins' }}
+      >
+        {meses.map(m => (
+          <option key={m.value} value={m.value}>{m.label}</option>
+        ))}
+      </select>
+      <select
+        value={periodoFim}
+        onChange={e => setPeriodoFim(e.target.value)}
+        className="bg-white border border-slate-300 rounded-full px-4 py-1.5 text-sm font-medium text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+        style={{ fontFamily: 'Poppins' }}
+      >
+        {meses.map(m => (
+          <option key={m.value} value={m.value}>{m.label}</option>
+        ))}
+      </select>
+      <button
+        onClick={handleUltimoMes}
+        className="bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase"
+        style={{ fontFamily: 'Poppins' }}
+      >
+        Último Mês
+      </button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-xl p-8 border-t-4 border-blue-900">
+
+          {/* HEADER */}
           <div className="flex justify-between items-center mb-8">
-            <Image
-              src="/images/logo.png"
-              alt="Logo"
-              width={80}
-              height={80}
-              className="rounded-lg"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-                style={{ fontFamily: 'Poppins' }}
-              >
-                Sair
-              </button>
+            <div className="flex items-center gap-4">
+              <Image src="/images/logo.png" alt="Logo" width={80} height={80} className="rounded-lg" />
+              {userName && (
+                <div>
+                  <p className="text-gray-500 text-sm" style={{ fontFamily: 'Poppins' }}>Bem-vindo(a),</p>
+                  <p className="text-xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>{userName}</p>
+                </div>
+              )}
             </div>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+              style={{ fontFamily: 'Poppins' }}
+            >
+              Sair
+            </button>
           </div>
 
-          <h1 className="text-3xl font-bold text-blue-900 mb-8" style={{ fontFamily: 'Poppins' }}>
+          <h1 className="text-3xl font-bold text-blue-900 mb-6" style={{ fontFamily: 'Poppins' }}>
             Painel Administrativo
           </h1>
 
+          {/* FILTRO */}
+          <FiltroBar />
+
+          {/* ABAS */}
           <div className="flex gap-2 mb-8 border-b-2 border-gray-200 overflow-x-auto">
-            <button
-              onClick={() => setTab('opcoes')}
-              className={`px-4 py-2 font-bold whitespace-nowrap ${tab === 'opcoes' ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
-              style={{ fontFamily: 'Poppins' }}
-            >
-              Feedback por Motivo
-            </button>
-            <button
-              onClick={() => setTab('usuarios')}
-              className={`px-4 py-2 font-bold whitespace-nowrap ${tab === 'usuarios' ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
-              style={{ fontFamily: 'Poppins' }}
-            >
-              Feedback por Atendente
-            </button>
-            <button
-              onClick={() => setTab('lojas')}
-              className={`px-4 py-2 font-bold whitespace-nowrap ${tab === 'lojas' ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
-              style={{ fontFamily: 'Poppins' }}
-            >
-              Feedback por Loja
-            </button>
-            <button
-              onClick={() => setTab('logs')}
-              className={`px-4 py-2 font-bold whitespace-nowrap ${tab === 'logs' ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
-              style={{ fontFamily: 'Poppins' }}
-            >
-              Logs
-            </button>
+            {(['opcoes', 'usuarios', 'lojas', 'logs'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-4 py-2 font-bold whitespace-nowrap ${tab === t ? 'text-blue-900 border-b-4 border-blue-900' : 'text-gray-600'}`}
+                style={{ fontFamily: 'Poppins' }}
+              >
+                {t === 'opcoes' ? 'Feedback por Motivo' : t === 'usuarios' ? 'Feedback por Atendente' : t === 'lojas' ? 'Feedback por Loja' : 'Logs'}
+              </button>
+            ))}
           </div>
 
+          {/* FEEDBACK POR MOTIVO */}
           {tab === 'opcoes' && (
             <div>
-              <h2 className="text-2xl font-bold mb-6 text-blue-900" style={{ fontFamily: 'Poppins' }}>
-                Motivos de Rejeição
-              </h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Motivos de Rejeição</h2>
+                <div className="flex gap-2">
+                  <button onClick={() => exportCSV(stats, 'motivos.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Exportar CSV
+                  </button>
+                  <button onClick={loadStats} disabled={loading} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50" style={{ fontFamily: 'Poppins' }}>
+                    {loading ? 'Carregando...' : 'Atualizar'}
+                  </button>
+                </div>
+              </div>
               {stats.length > 0 ? (
                 <div className="mb-8">
                   <Bar data={chartOpcoes} options={{ responsive: true, indexAxis: 'y' }} />
                 </div>
               ) : (
-                <p className="text-gray-500" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
+                <p className="text-gray-500 mb-6" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
               )}
-              <button
-                onClick={loadStats}
-                disabled={loading}
-                className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg disabled:opacity-50"
-                style={{ fontFamily: 'Poppins' }}
-              >
-                {loading ? 'Carregando...' : 'Atualizar'}
-              </button>
               <table className="w-full mt-6 border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
@@ -247,25 +322,27 @@ export default function Admin() {
             </div>
           )}
 
+          {/* FEEDBACK POR ATENDENTE */}
           {tab === 'usuarios' && (
             <div>
-              <h2 className="text-2xl font-bold mb-6 text-blue-900" style={{ fontFamily: 'Poppins' }}>
-                Feedback por Atendente
-              </h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Feedback por Atendente</h2>
+                <div className="flex gap-2">
+                  <button onClick={() => exportCSV(userStats, 'atendentes.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Exportar CSV
+                  </button>
+                  <button onClick={loadUserStats} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Atualizar
+                  </button>
+                </div>
+              </div>
               {userStats.length > 0 ? (
                 <div className="mb-8">
                   <Bar data={chartUsuarios} options={{ responsive: true }} />
                 </div>
               ) : (
-                <p className="text-gray-500" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
+                <p className="text-gray-500 mb-6" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
               )}
-              <button
-                onClick={loadUserStats}
-                className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg"
-                style={{ fontFamily: 'Poppins' }}
-              >
-                Atualizar
-              </button>
               <table className="w-full mt-6 border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
@@ -287,25 +364,27 @@ export default function Admin() {
             </div>
           )}
 
+          {/* FEEDBACK POR LOJA */}
           {tab === 'lojas' && (
             <div>
-              <h2 className="text-2xl font-bold mb-6 text-blue-900" style={{ fontFamily: 'Poppins' }}>
-                Feedback por Loja
-              </h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Feedback por Loja</h2>
+                <div className="flex gap-2">
+                  <button onClick={() => exportCSV(lojaStats, 'lojas.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Exportar CSV
+                  </button>
+                  <button onClick={loadLojaStats} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Atualizar
+                  </button>
+                </div>
+              </div>
               {lojaStats.length > 0 ? (
                 <div className="mb-8">
                   <Bar data={chartLojas} options={{ responsive: true }} />
                 </div>
               ) : (
-                <p className="text-gray-500" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
+                <p className="text-gray-500 mb-6" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
               )}
-              <button
-                onClick={loadLojaStats}
-                className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg"
-                style={{ fontFamily: 'Poppins' }}
-              >
-                Atualizar
-              </button>
               <table className="w-full mt-6 border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
@@ -325,18 +404,20 @@ export default function Admin() {
             </div>
           )}
 
+          {/* LOGS */}
           {tab === 'logs' && (
             <div>
-              <h2 className="text-2xl font-bold mb-6 text-blue-900" style={{ fontFamily: 'Poppins' }}>
-                Logs do Sistema
-              </h2>
-              <button
-                onClick={loadLogs}
-                className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg mb-4"
-                style={{ fontFamily: 'Poppins' }}
-              >
-                Atualizar
-              </button>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Logs do Sistema</h2>
+                <div className="flex gap-2">
+                  <button onClick={() => exportCSV(logs, 'logs.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Exportar CSV
+                  </button>
+                  <button onClick={loadLogs} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Atualizar
+                  </button>
+                </div>
+              </div>
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
@@ -351,7 +432,7 @@ export default function Admin() {
                       <td className="p-3 border-b text-sm" style={{ fontFamily: 'Poppins' }}>
                         {new Date(log.created_at).toLocaleString('pt-BR')}
                       </td>
-                      <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{log.email || 'Sistema'}</td>
+                      <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{log.nome || 'Sistema'}</td>
                       <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{log.acao}</td>
                     </tr>
                   ))}
@@ -359,6 +440,7 @@ export default function Admin() {
               </table>
             </div>
           )}
+
         </div>
       </div>
     </div>
