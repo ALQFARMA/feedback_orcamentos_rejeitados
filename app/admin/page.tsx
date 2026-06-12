@@ -39,18 +39,16 @@ interface Log {
   created_at: string;
 }
 
-const MESES_NOMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-
 function getMeses() {
-  const meses = [];
-  const now = new Date();
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const label = `${MESES_NOMES[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
-    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    meses.push({ label, value });
-  }
-  return meses;
+  return [
+    { label: 'Jun/26', value: '2026-06' },
+    { label: 'Jul/26', value: '2026-07' },
+    { label: 'Ago/26', value: '2026-08' },
+    { label: 'Set/26', value: '2026-09' },
+    { label: 'Out/26', value: '2026-10' },
+    { label: 'Nov/26', value: '2026-11' },
+    { label: 'Dez/26', value: '2026-12' },
+  ];
 }
 
 function exportCSV(data: any[], filename: string) {
@@ -70,8 +68,6 @@ function exportCSV(data: any[], filename: string) {
 export default function Admin() {
   const router = useRouter();
   const meses = getMeses();
-  const mesAtual = meses[meses.length - 1].value;
-  const mesAnterior = meses[meses.length - 2].value;
 
   const [stats, setStats] = useState<Stat[]>([]);
   const [userStats, setUserStats] = useState<UserStat[]>([]);
@@ -80,8 +76,8 @@ export default function Admin() {
   const [tab, setTab] = useState<'opcoes' | 'usuarios' | 'lojas' | 'logs'>('opcoes');
   const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState('');
-  const [periodoInicio, setPeriodoInicio] = useState(mesAtual);
-  const [periodoFim, setPeriodoFim] = useState(mesAtual);
+  const [periodoInicio, setPeriodoInicio] = useState('2026-06');
+  const [periodoFim, setPeriodoFim] = useState('2026-06');
 
   useEffect(() => {
     loadUserName();
@@ -160,8 +156,8 @@ export default function Admin() {
   };
 
   const handleUltimoMes = () => {
-    setPeriodoInicio(mesAnterior);
-    setPeriodoFim(mesAnterior);
+    setPeriodoInicio('2026-06');
+    setPeriodoFim('2026-06');
   };
 
   const handleLogout = async () => {
@@ -181,10 +177,10 @@ export default function Admin() {
   };
 
   const chartUsuarios = {
-    labels: userStats.map(u => `${u.nome} (${u.loja})`),
+    labels: userStats.filter(u => u.nome).map(u => `${u.nome} (${u.loja})`),
     datasets: [{
       label: 'Feedback por Atendente',
-      data: userStats.map(u => Number(u.total)),
+      data: userStats.filter(u => u.nome).map(u => Number(u.total)),
       backgroundColor: '#2E3F6E',
       borderColor: '#fff',
       borderWidth: 2,
@@ -192,10 +188,10 @@ export default function Admin() {
   };
 
   const chartLojas = {
-    labels: lojaStats.map(l => l.loja || 'Sem loja'),
+    labels: lojaStats.filter(l => l.loja).map(l => l.loja),
     datasets: [{
       label: 'Total por Loja',
-      data: lojaStats.map(l => Number(l.total)),
+      data: lojaStats.filter(l => l.loja).map(l => Number(l.total)),
       backgroundColor: ['#2E3F6E', '#475569', '#64748B'],
       borderColor: '#fff',
       borderWidth: 2,
@@ -326,7 +322,7 @@ export default function Admin() {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Feedback por Atendente</h2>
                 <div className="flex gap-2">
-                  <button onClick={() => exportCSV(userStats, 'atendentes.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                  <button onClick={() => exportCSV(userStats.filter(u => u.nome), 'atendentes.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
                     Exportar CSV
                   </button>
                   <button onClick={loadUserStats} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
@@ -368,7 +364,7 @@ export default function Admin() {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Feedback por Loja</h2>
                 <div className="flex gap-2">
-                  <button onClick={() => exportCSV(lojaStats, 'lojas.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                  <button onClick={() => exportCSV(lojaStats.filter(l => l.loja), 'lojas.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
                     Exportar CSV
                   </button>
                   <button onClick={loadLojaStats} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
