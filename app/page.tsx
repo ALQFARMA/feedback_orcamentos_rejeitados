@@ -89,7 +89,7 @@ export default function Home() {
           </div>
 
           <h1 className="text-3xl font-bold text-blue-900 mb-2" style={{ fontFamily: 'Poppins' }}>
-            Feedbacks de Orçamentos Negativos
+            Feedbacks de Orçamentos Rejeitados
           </h1>
 
           <div className="bg-blue-50 border-l-4 border-blue-900 p-4 mb-6 rounded">
