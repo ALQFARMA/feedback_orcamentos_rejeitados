@@ -1,163 +1,119 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
+interface Opcao {
+  id: number;
+  nome: string;
+}
+
 export default function Home() {
   const router = useRouter();
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [confirma, setConfirma] = useState('');
-  const [nome, setNome] = useState('');
-  const [loja, setLoja] = useState('Tijuca');
-  const [error, setError] = useState('');
+  const [opcoes, setOpcoes] = useState<Opcao[]>([]);
+  const [selected, setSelected] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    loadOpcoes();
+  }, []);
+
+  const loadOpcoes = async () => {
+    try {
+      const res = await fetch('/api/options/list');
+      const data = await res.json();
+      if (data.success) setOpcoes(data.opcoes);
+    } catch (err) {
+      console.error('Erro ao carregar opções:', err);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selected) return;
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const body = isLogin 
-        ? { email, senha }
-        : { email, senha, confirma_senha: confirma, nome, loja };
-
-      const response = await fetch(endpoint, {
+      const res = await fetch('/api/feedback/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ opcao_id: selected }),
       });
 
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.success) {
-        if (isLogin) {
-          if (data.isAdmin) {
-            router.push('/admin');
-          } else {
-            router.push('/dashboard');
-          }
-        } else {
-          setError('');
-          alert('Usuário criado com sucesso! Agora faça login.');
-          setIsLogin(true);
-          setEmail('');
-          setSenha('');
-          setConfirma('');
-          setNome('');
-          setLoja('Tijuca');
-        }
+        setSuccess('Seu registro foi salvo com sucesso');
+        setSelected(null);
+        setTimeout(() => setSuccess(''), 4000);
       } else {
-        setError(data.error || 'Erro');
+        setError(data.error || 'Erro ao salvar');
       }
     } catch (err) {
-      setError('Erro na requisição');
+      setError('Erro ao salvar');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md border-t-4 border-blue-900">
-        {/* LOGO */}
-        <div className="flex justify-center mb-6">
-          <Image
-            src="/images/logo.png"
-            alt="Logo"
-            width={120}
-            height={120}
-            className="rounded-lg"
-          />
-        </div>
-
-        <h1 className="text-3xl font-bold mb-6 text-center text-blue-900" style={{ fontFamily: 'Poppins' }}>
-          {isLogin ? 'Entrar' : 'Registrar'}
-        </h1>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <>
-              <input
-                type="text"
-                placeholder="Seu nome completo"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
-                style={{ fontFamily: 'Poppins' }}
-              />
-
-              <select
-                value={loja}
-                onChange={(e) => setLoja(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
-                style={{ fontFamily: 'Poppins' }}
-              >
-                <option value="Tijuca">Loja Tijuca</option>
-                <option value="Downtown">Loja Downtown</option>
-                <option value="Barra">Loja Barra</option>
-              </select>
-            </>
-          )}
-
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
-            style={{ fontFamily: 'Poppins' }}
-          />
-
-          <input
-            type="password"
-            placeholder="Senha"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
-            style={{ fontFamily: 'Poppins' }}
-          />
-
-          {!isLogin && (
-            <input
-              type="password"
-              placeholder="Confirmar Senha"
-              value={confirma}
-              onChange={(e) => setConfirma(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-lg shadow-xl p-8 border-t-4 border-blue-900">
+          <div className="flex justify-between items-center mb-8">
+            <Image src="/images/logo.png" alt="Logo" width={80} height={80} className="rounded-lg" />
+            <button
+              onClick={() => router.push('/login')}
+              className="text-xs text-slate-400 hover:text-blue-900 border border-slate-200 hover:border-blue-900 px-3 py-1.5 rounded-lg transition"
               style={{ fontFamily: 'Poppins' }}
-            />
-          )}
+            >
+              Admin
+            </button>
+          </div>
 
-          {error && <p className="text-red-500 text-sm text-center" style={{ fontFamily: 'Poppins' }}>{error}</p>}
+          <h1 className="text-3xl font-bold text-blue-900 mb-2" style={{ fontFamily: 'Poppins' }}>
+            Feedbacks de Orçamentos Negativos
+          </h1>
+
+          <div className="bg-blue-50 border-l-4 border-blue-900 p-4 mb-6 rounded">
+            <p className="text-blue-900 text-center" style={{ fontFamily: 'Poppins' }}>
+              Selecione um dos motivos abaixo que seu cliente indicou para não ter aprovado o orçamento enviado e depois clique em salvar.
+            </p>
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
+            {opcoes.map((opcao) => (
+              <label key={opcao.id} className="flex items-start p-3 hover:bg-white rounded cursor-pointer transition mb-2">
+                <input
+                  type="radio"
+                  name="opcao"
+                  value={opcao.id}
+                  checked={selected === opcao.id}
+                  onChange={() => setSelected(opcao.id)}
+                  className="w-4 h-4 text-blue-900 mt-1"
+                />
+                <span className="ml-3 font-medium text-gray-700" style={{ fontFamily: 'Poppins' }}>
+                  {opcao.nome}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {error && <p className="text-red-500 text-center mb-4" style={{ fontFamily: 'Poppins' }}>{error}</p>}
+          {success && <p className="text-green-600 font-bold text-center mb-4" style={{ fontFamily: 'Poppins' }}>{success}</p>}
 
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-900 hover:bg-blue-950 text-white font-bold py-2 rounded-lg disabled:opacity-50"
+            onClick={handleSubmit}
+            disabled={loading || !selected}
+            className="w-full bg-blue-900 hover:bg-blue-950 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ fontFamily: 'Poppins' }}
           >
-            {loading ? 'Processando...' : (isLogin ? 'Entrar' : 'Registrar')}
+            {loading ? 'Salvando...' : 'Salvar'}
           </button>
-        </form>
-
-        <p className="text-center mt-4 text-gray-600" style={{ fontFamily: 'Poppins' }}>
-          {isLogin ? 'Não tem conta? ' : 'Já tem conta? '}
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-900 hover:underline font-bold"
-          >
-            {isLogin ? 'Registre-se' : 'Entrar'}
-          </button>
-        </p>
+        </div>
       </div>
     </div>
   );
