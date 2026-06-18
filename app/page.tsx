@@ -63,14 +63,16 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-xl p-8 border-t-4 border-blue-900">
+
+          {/* HEADER */}
           <div className="flex justify-between items-center mb-8">
-            <Image src="/images/logo.png" alt="Logo" width={80} height={80} className="rounded-lg" />
+            <Image src="/images/logo.png" alt="Logo" width={140} height={140} className="rounded-lg" />
             <button
               onClick={() => router.push('/login')}
-              className="text-xs text-slate-400 hover:text-blue-900 border border-slate-200 hover:border-blue-900 px-3 py-1.5 rounded-lg transition"
+              className="bg-blue-900 hover:bg-blue-950 text-white text-sm font-bold px-4 py-2 rounded-lg transition"
               style={{ fontFamily: 'Poppins' }}
             >
-              Admin
+              Log in
             </button>
           </div>
 
@@ -113,6 +115,7 @@ export default function Home() {
           >
             {loading ? 'Salvando...' : 'Salvar'}
           </button>
+
         </div>
       </div>
     </div>
