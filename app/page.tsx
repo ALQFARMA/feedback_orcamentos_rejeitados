@@ -13,6 +13,7 @@ export default function Home() {
   const router = useRouter();
   const [opcoes, setOpcoes] = useState<Opcao[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
+  const [outroTexto, setOutroTexto] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -31,8 +32,15 @@ export default function Home() {
     }
   };
 
+  const opcaoSelecionada = opcoes.find(o => o.id === selected);
+  const isOutro = opcaoSelecionada?.nome?.toLowerCase() === 'outro';
+
   const handleSubmit = async () => {
     if (!selected) return;
+    if (isOutro && !outroTexto.trim()) {
+      setError('Por favor, descreva o motivo.');
+      return;
+    }
     setError('');
     setSuccess('');
     setLoading(true);
@@ -41,13 +49,17 @@ export default function Home() {
       const res = await fetch('/api/feedback/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ opcao_id: selected }),
+        body: JSON.stringify({
+          opcao_id: selected,
+          outro_texto: isOutro ? outroTexto : null,
+        }),
       });
 
       const data = await res.json();
       if (data.success) {
         setSuccess('Seu registro foi salvo com sucesso');
         setSelected(null);
+        setOutroTexto('');
         setTimeout(() => setSuccess(''), 4000);
       } else {
         setError(data.error || 'Erro ao salvar');
@@ -94,7 +106,11 @@ export default function Home() {
                   name="opcao"
                   value={opcao.id}
                   checked={selected === opcao.id}
-                  onChange={() => setSelected(opcao.id)}
+                  onChange={() => {
+                    setSelected(opcao.id);
+                    setOutroTexto('');
+                    setError('');
+                  }}
                   className="w-4 h-4 text-blue-900 mt-1"
                 />
                 <span className="ml-3 font-medium text-gray-700" style={{ fontFamily: 'Poppins' }}>
@@ -104,12 +120,26 @@ export default function Home() {
             ))}
           </div>
 
+          {/* CAMPO OUTRO */}
+          {isOutro && (
+            <div className="mb-4">
+              <textarea
+                value={outroTexto}
+                onChange={(e) => setOutroTexto(e.target.value)}
+                placeholder="Descreva o motivo..."
+                rows={3}
+                className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 resize-none"
+                style={{ fontFamily: 'Poppins' }}
+              />
+            </div>
+          )}
+
           {error && <p className="text-red-500 text-center mb-4" style={{ fontFamily: 'Poppins' }}>{error}</p>}
           {success && <p className="text-green-600 font-bold text-center mb-4" style={{ fontFamily: 'Poppins' }}>{success}</p>}
 
           <button
             onClick={handleSubmit}
-            disabled={loading || !selected}
+            disabled={loading || !selected || (isOutro && !outroTexto.trim())}
             className="w-full bg-blue-900 hover:bg-blue-950 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ fontFamily: 'Poppins' }}
           >

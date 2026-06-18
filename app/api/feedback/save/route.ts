@@ -4,15 +4,15 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { opcao_id } = body;
+    const { opcao_id, outro_texto } = body;
 
     if (!opcao_id) {
       return NextResponse.json({ error: 'Selecione uma opção' }, { status: 400 });
     }
 
     await query(
-      'INSERT INTO registros (opcao_id, created_at) VALUES ($1, NOW())',
-      [opcao_id]
+      'INSERT INTO registros (opcao_id, outro_texto, created_at) VALUES ($1, $2, NOW())',
+      [opcao_id, outro_texto || null]
     );
 
     return NextResponse.json({ success: true });
