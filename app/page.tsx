@@ -82,7 +82,7 @@ export default function Home() {
 
           <div className="bg-blue-50 border-l-4 border-blue-900 p-4 mb-6 rounded">
             <p className="text-blue-900 text-center" style={{ fontFamily: 'Poppins' }}>
-              Selecione um dos motivos abaixo que seu cliente indicou para não ter aprovado o orçamento enviado e depois clique em salvar.
+              Nos ajude a melhorar! Qual o principal motivo da sua rejeição ao nosso orçamento? Selecione uma das opções abaixo e clique em salvar.
             </p>
           </div>
 
