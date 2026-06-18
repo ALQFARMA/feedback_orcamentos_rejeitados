@@ -81,7 +81,7 @@ export default function Home() {
           </h1>
 
           <div className="bg-blue-50 border-l-4 border-blue-900 p-4 mb-6 rounded">
-            <p className="text-blue-900 text-center" style={{ fontFamily: 'Poppins' }}>
+            <p className="text-blue-900 text-justify" style={{ fontFamily: 'Poppins' }}>
               Nos ajude a melhorar! Qual o principal motivo da sua rejeição ao nosso orçamento? Selecione uma das opções abaixo e clique em salvar.
             </p>
           </div>
