@@ -21,21 +21,16 @@ interface Stat {
   total: number;
 }
 
-interface UserStat {
-  nome: string;
-  loja: string;
-  total: number;
-}
-
-interface LojaStat {
-  loja: string;
-  total: number;
-}
-
 interface Log {
   id: number;
   nome: string;
   acao: string;
+  created_at: string;
+}
+
+interface OutroFeedback {
+  id: number;
+  outro_texto: string;
   created_at: string;
 }
 
@@ -70,10 +65,9 @@ export default function Admin() {
   const meses = getMeses();
 
   const [stats, setStats] = useState<Stat[]>([]);
-  const [userStats, setUserStats] = useState<UserStat[]>([]);
-  const [lojaStats, setLojaStats] = useState<LojaStat[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
-  const [tab, setTab] = useState<'opcoes' | 'usuarios' | 'lojas' | 'logs'>('opcoes');
+  const [outros, setOutros] = useState<OutroFeedback[]>([]);
+  const [tab, setTab] = useState<'opcoes' | 'logs' | 'outros'>('opcoes');
   const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState('');
   const [periodoInicio, setPeriodoInicio] = useState('2026-06');
@@ -107,9 +101,8 @@ export default function Admin() {
 
   const loadAll = () => {
     loadStats();
-    loadUserStats();
-    loadLojaStats();
     loadLogs();
+    loadOutros();
   };
 
   const loadStats = async () => {
@@ -125,26 +118,6 @@ export default function Admin() {
     }
   };
 
-  const loadUserStats = async () => {
-    try {
-      const res = await fetch(`/api/admin/user-stats${buildQuery()}`);
-      const data = await res.json();
-      if (data.success) setUserStats(data.stats);
-    } catch (err) {
-      console.error('Erro ao carregar user stats:', err);
-    }
-  };
-
-  const loadLojaStats = async () => {
-    try {
-      const res = await fetch(`/api/admin/loja-stats${buildQuery()}`);
-      const data = await res.json();
-      if (data.success) setLojaStats(data.stats);
-    } catch (err) {
-      console.error('Erro ao carregar loja stats:', err);
-    }
-  };
-
   const loadLogs = async () => {
     try {
       const res = await fetch(`/api/admin/logs${buildQuery()}`);
@@ -152,6 +125,16 @@ export default function Admin() {
       if (data.success) setLogs(data.logs);
     } catch (err) {
       console.error('Erro ao carregar logs:', err);
+    }
+  };
+
+  const loadOutros = async () => {
+    try {
+      const res = await fetch(`/api/admin/outros${buildQuery()}`);
+      const data = await res.json();
+      if (data.success) setOutros(data.outros);
+    } catch (err) {
+      console.error('Erro ao carregar outros:', err);
     }
   };
 
@@ -171,28 +154,6 @@ export default function Admin() {
       label: 'Total de Feedback',
       data: stats.map(s => Number(s.total)),
       backgroundColor: ['#2E3F6E', '#475569', '#64748B', '#94A3B8', '#CBD5E1', '#E2E8F0'],
-      borderColor: '#fff',
-      borderWidth: 2,
-    }],
-  };
-
-  const chartUsuarios = {
-    labels: userStats.filter(u => u.nome).map(u => `${u.nome} (${u.loja})`),
-    datasets: [{
-      label: 'Feedback por Atendente',
-      data: userStats.filter(u => u.nome).map(u => Number(u.total)),
-      backgroundColor: '#2E3F6E',
-      borderColor: '#fff',
-      borderWidth: 2,
-    }],
-  };
-
-  const chartLojas = {
-    labels: lojaStats.filter(l => l.loja).map(l => l.loja),
-    datasets: [{
-      label: 'Total por Loja',
-      data: lojaStats.filter(l => l.loja).map(l => Number(l.total)),
-      backgroundColor: ['#2E3F6E', '#475569', '#64748B'],
       borderColor: '#fff',
       borderWidth: 2,
     }],
@@ -261,9 +222,8 @@ export default function Admin() {
           <div className="flex gap-2 mb-8 border-b-2 border-gray-200 overflow-x-auto">
             {([
               { key: 'opcoes', label: 'Feedback por Motivo' },
-              { key: 'usuarios', label: 'Feedback por Atendente' },
-              { key: 'lojas', label: 'Feedback por Loja' },
               { key: 'logs', label: 'Logs' },
+              { key: 'outros', label: 'Outros' },
             ] as const).map(({ key, label }) => (
               <button
                 key={key}
@@ -316,88 +276,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* FEEDBACK POR ATENDENTE */}
-          {tab === 'usuarios' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Feedback por Atendente</h2>
-                <div className="flex gap-2">
-                  <button onClick={() => exportCSV(userStats.filter(u => u.nome), 'atendentes.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
-                    Exportar CSV
-                  </button>
-                  <button onClick={loadUserStats} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
-                    Atualizar
-                  </button>
-                </div>
-              </div>
-              {userStats.filter(u => u.nome).length > 0 ? (
-                <div className="mb-8">
-                  <Bar data={chartUsuarios} options={{ responsive: true }} />
-                </div>
-              ) : (
-                <p className="text-gray-500 mb-6" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
-              )}
-              <table className="w-full mt-6 border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Atendente</th>
-                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Loja</th>
-                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {userStats.filter(u => u.nome).map((user) => (
-                    <tr key={`${user.nome}-${user.loja}`} className="hover:bg-gray-50">
-                      <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{user.nome}</td>
-                      <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{user.loja}</td>
-                      <td className="p-3 border-b font-bold" style={{ fontFamily: 'Poppins' }}>{user.total}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* FEEDBACK POR LOJA */}
-          {tab === 'lojas' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Feedback por Loja</h2>
-                <div className="flex gap-2">
-                  <button onClick={() => exportCSV(lojaStats.filter(l => l.loja), 'lojas.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
-                    Exportar CSV
-                  </button>
-                  <button onClick={loadLojaStats} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
-                    Atualizar
-                  </button>
-                </div>
-              </div>
-              {lojaStats.filter(l => l.loja).length > 0 ? (
-                <div className="mb-8">
-                  <Bar data={chartLojas} options={{ responsive: true }} />
-                </div>
-              ) : (
-                <p className="text-gray-500 mb-6" style={{ fontFamily: 'Poppins' }}>Nenhum dado disponível</p>
-              )}
-              <table className="w-full mt-6 border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Loja</th>
-                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lojaStats.filter(l => l.loja).map((loja) => (
-                    <tr key={loja.loja} className="hover:bg-gray-50">
-                      <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{loja.loja}</td>
-                      <td className="p-3 border-b font-bold" style={{ fontFamily: 'Poppins' }}>{loja.total}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
           {/* LOGS */}
           {tab === 'logs' && (
             <div>
@@ -428,6 +306,41 @@ export default function Admin() {
                       </td>
                       <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{log.nome || 'Sistema'}</td>
                       <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{log.acao}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* OUTROS */}
+          {tab === 'outros' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Explicações de Outros</h2>
+                <div className="flex gap-2">
+                  <button onClick={() => exportCSV(outros, 'outros.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Exportar CSV
+                  </button>
+                  <button onClick={loadOutros} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Atualizar
+                  </button>
+                </div>
+              </div>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Data/Hora</th>
+                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Explicação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outros.map((outro) => (
+                    <tr key={outro.id} className="hover:bg-gray-50">
+                      <td className="p-3 border-b text-sm whitespace-nowrap" style={{ fontFamily: 'Poppins' }}>
+                        {new Date(outro.created_at).toLocaleString('pt-BR')}
+                      </td>
+                      <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{outro.outro_texto}</td>
                     </tr>
                   ))}
                 </tbody>
