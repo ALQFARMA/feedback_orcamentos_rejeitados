@@ -67,7 +67,7 @@ export default function Admin() {
   const [stats, setStats] = useState<Stat[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
   const [outros, setOutros] = useState<OutroFeedback[]>([]);
-  const [tab, setTab] = useState<'opcoes' | 'logs' | 'outros'>('opcoes');
+  const [tab, setTab] = useState<'opcoes' | 'outros' | 'logs'>('opcoes');
   const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState('');
   const [periodoInicio, setPeriodoInicio] = useState('2026-06');
@@ -222,8 +222,8 @@ export default function Admin() {
           <div className="flex gap-2 mb-8 border-b-2 border-gray-200 overflow-x-auto">
             {([
               { key: 'opcoes', label: 'Feedback por Motivo' },
+              { key: 'outros', label: 'Feedback Outros' },
               { key: 'logs', label: 'Logs' },
-              { key: 'outros', label: 'Outros' },
             ] as const).map(({ key, label }) => (
               <button
                 key={key}
@@ -276,48 +276,11 @@ export default function Admin() {
             </div>
           )}
 
-          {/* LOGS */}
-          {tab === 'logs' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Logs do Sistema</h2>
-                <div className="flex gap-2">
-                  <button onClick={() => exportCSV(logs, 'logs.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
-                    Exportar CSV
-                  </button>
-                  <button onClick={loadLogs} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
-                    Atualizar
-                  </button>
-                </div>
-              </div>
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Data/Hora</th>
-                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Usuário</th>
-                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      <td className="p-3 border-b text-sm" style={{ fontFamily: 'Poppins' }}>
-                        {new Date(log.created_at).toLocaleString('pt-BR')}
-                      </td>
-                      <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{log.nome || 'Sistema'}</td>
-                      <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{log.acao}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* OUTROS */}
+          {/* FEEDBACK OUTROS */}
           {tab === 'outros' && (
             <div>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Explicações de Outros</h2>
+                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Feedback Outros</h2>
                 <div className="flex gap-2">
                   <button onClick={() => exportCSV(outros, 'outros.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
                     Exportar CSV
@@ -341,6 +304,41 @@ export default function Admin() {
                         {new Date(outro.created_at).toLocaleString('pt-BR')}
                       </td>
                       <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{outro.outro_texto}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* LOGS */}
+          {tab === 'logs' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: 'Poppins' }}>Logs do Sistema</h2>
+                <div className="flex gap-2">
+                  <button onClick={() => exportCSV(logs, 'logs.csv')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Exportar CSV
+                  </button>
+                  <button onClick={loadLogs} className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-lg text-sm" style={{ fontFamily: 'Poppins' }}>
+                    Atualizar
+                  </button>
+                </div>
+              </div>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Data/Hora</th>
+                    <th className="text-left p-3 border-b" style={{ fontFamily: 'Poppins' }}>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr key={log.id} className="hover:bg-gray-50">
+                      <td className="p-3 border-b text-sm" style={{ fontFamily: 'Poppins' }}>
+                        {new Date(log.created_at).toLocaleString('pt-BR')}
+                      </td>
+                      <td className="p-3 border-b" style={{ fontFamily: 'Poppins' }}>{log.acao}</td>
                     </tr>
                   ))}
                 </tbody>
